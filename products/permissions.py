@@ -10,3 +10,14 @@ class IsSeller(permissions.BasePermission):
             return False
 
         return True
+
+
+class IsOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method == "PATCH":
+            if request.user.is_authenticated:
+                return obj.seller == request.user
+
+            return False
+
+        return True

@@ -1,23 +1,27 @@
 from django.shortcuts import render
 from rest_framework import generics, authentication, permissions
 from accounts.models import Account
+from core.mixins import SerializerByMethodMixin
 
 from products.models import Product
-from products.permissions import IsSeller
+from products.permissions import IsOwner, IsSeller
 from products.serializers import GetProductSerializer, ProductSerializer
 
 
-class ProductView(generics.ListCreateAPIView):
+class ProductView(SerializerByMethodMixin, generics.ListCreateAPIView):
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [IsSeller]
 
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_map = {"POST": ProductSerializer, "GET": GetProductSerializer}
 
     def perform_create(self, serializer):
         return serializer.save(seller_id=self.request.user.id)
 
 
-class ProductIdView(generics.RetrieveUpdateAPIView):
+class ProductIdView(SerializerByMethodMixin, generics.RetrieveUpdateAPIView):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [IsOwner]
+
     queryset = Product.objects.all()
-    serializer_class = GetProductSerializer
+    serializer_map = {"PATCH": ProductSerializer, "GET": GetProductSerializer}
