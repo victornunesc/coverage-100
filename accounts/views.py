@@ -4,7 +4,8 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 
 from accounts.models import Account
-from accounts.serializers import AccountSerializer, LoginSerializer
+from accounts.permissions import IsOwner, IsSuperAdmin
+from accounts.serializers import AccountManagement, AccountSerializer, LoginSerializer
 
 
 class AccountView(generics.ListCreateAPIView):
@@ -19,6 +20,22 @@ class AccountNewestView(generics.ListAPIView):
     def get_queryset(self):
         num = self.kwargs["num"]
         return self.queryset.order_by("-date_joined")[0:num]
+
+
+class AccountIdView(generics.UpdateAPIView):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [IsOwner]
+
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+
+
+class AccountManagementView(generics.UpdateAPIView):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [IsSuperAdmin]
+
+    queryset = Account.objects.all()
+    serializer_class = AccountManagement
 
 
 class LoginView(APIView):

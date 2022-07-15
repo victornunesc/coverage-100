@@ -12,7 +12,7 @@ class IsSeller(permissions.BasePermission):
         return True
 
 
-class IsOwner(permissions.BasePermission):
+class IsProductOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method == "PATCH":
             if request.user.is_authenticated:

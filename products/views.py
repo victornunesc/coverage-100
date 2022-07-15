@@ -4,7 +4,7 @@ from accounts.models import Account
 from core.mixins import SerializerByMethodMixin
 
 from products.models import Product
-from products.permissions import IsOwner, IsSeller
+from products.permissions import IsProductOwner, IsSeller
 from products.serializers import GetProductSerializer, ProductSerializer
 
 
@@ -21,7 +21,7 @@ class ProductView(SerializerByMethodMixin, generics.ListCreateAPIView):
 
 class ProductIdView(SerializerByMethodMixin, generics.RetrieveUpdateAPIView):
     authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [IsOwner]
+    permission_classes = [IsProductOwner]
 
     queryset = Product.objects.all()
     serializer_map = {"PATCH": ProductSerializer, "GET": GetProductSerializer}
