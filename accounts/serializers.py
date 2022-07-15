@@ -17,7 +17,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "date_joined",
         ]
         extra_kwargs = {"password": {"write_only": True}}
-        read_only = ["date_joined"]
+        read_only_fields = ["date_joined"]
 
     def create(self, validated_data: dict):
         return Account.objects.create_user(**validated_data)
