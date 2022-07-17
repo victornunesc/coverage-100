@@ -1,3 +1,4 @@
+from urllib import response
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from accounts.models import Account
@@ -11,11 +12,11 @@ class AccountViewTest(APITestCase):
     def setUpTestData(cls) -> None:
         cls.url = "/api/accounts/"
         cls.account_data = {
-            "email": "test@mail.com",
+            "email": fake.email(),
             "password": "1234",
-            "first_name": "John",
-            "last_name": "Doe",
-            "is_seller": True,
+            "first_name": fake.first_name(),
+            "last_name": fake.last_name(),
+            "is_seller": fake.boolean(),
         }
         cls.invalid_account_data = {"email": "invalid@mail.com"}
 
@@ -55,7 +56,7 @@ class AccountNewestViewTest(APITestCase):
         )
 
 
-class AccountIdView(APITestCase):
+class AccountIdViewTest(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         cls.url = "/api/accounts/1/"
@@ -101,9 +102,60 @@ class AccountIdView(APITestCase):
 
         response = self.client.patch(self.url, {"first_name": self.first_name})
 
-        print(response.data)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
             response.json(),
             {"detail": "You do not have permission to perform this action."},
+        )
+
+
+class LoginViewTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.url = "/api/login/"
+        cls.account_data = {
+            "email": fake.email(),
+            "password": "1234",
+            "is_seller": fake.boolean(),
+        }
+        cls.invalid_account = {
+            "email": fake.email(),
+            "password": "1234",
+            "is_seller": fake.boolean(),
+        }
+
+    def setUp(self) -> None:
+        Account.objects.create_user(**self.account_data)
+
+    def test_login(self):
+        response = self.client.post(
+            self.url,
+            {
+                "email": self.account_data["email"],
+                "password": self.account_data["password"],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Token", response.json())
+
+    def test_fail_login_invalid_credentials(self):
+        response = self.client.post(self.url, self.invalid_account)
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.json(),
+            {"detail": "invalid email or password"},
+        )
+
+    def test_fail_login_invalid_body(self):
+        response = self.client.post(self.url, {"": ""})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {
+                "email": ["This field is required."],
+                "password": ["This field is required."],
+            },
         )
