@@ -16,7 +16,7 @@ class AccountModelTest(TestCase):
         }
         cls.account_obj: Account = Account.objects.create_user(**cls.mock_account)
 
-    def test_account_fields(self):
+    def test_all_account_fields(self):
         self.assertIsInstance(self.account_obj.email, str)
         self.assertEqual(self.account_obj.email, self.mock_account["email"])
 
