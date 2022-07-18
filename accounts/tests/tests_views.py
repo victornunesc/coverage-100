@@ -20,13 +20,19 @@ class AccountViewTest(APITestCase):
         }
         cls.invalid_account_data = {"email": "invalid@mail.com"}
 
-    def test_create_account(self):
+    def test_success_should_create_account_when_request_is_correct(self):
         response = self.client.post(self.url, self.account_data)
 
         self.assertEqual(response.status_code, 201)
         self.assertNotIn("password", response.json())
 
-    def test_list_all_accounts(self):
+    def test_fail_should_throw_bad_request_status_when_invalid_body(self):
+        response = self.client.post(self.url, self.invalid_account_data)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("password", response.json())
+
+    def test_success_should_list_all_accounts_when_request_is_correct(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
@@ -47,7 +53,9 @@ class AccountNewestViewTest(APITestCase):
                 is_seller=fake.boolean(),
             )
 
-    def test_newest_accounts(self):
+    def test_success_should_show_by_order_newest_accounts_when_request_is_correct(
+        self,
+    ):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
@@ -72,7 +80,7 @@ class AccountIdViewTest(APITestCase):
         self.first_name = fake.first_name()
         self.account = Account.objects.create_user(**self.account_data)
 
-    def test_patch_account_with_credentials(self):
+    def test_success_should_patch_account_when_has_correct_credentials(self):
         token = Token.objects.create(user=self.account)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
 
@@ -81,7 +89,7 @@ class AccountIdViewTest(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data["first_name"] == self.first_name)
 
-    def test_fail_patch_account_without_credentials(self):
+    def test_fail_should_not_patch_account_when_not_has_credentials(self):
         response = self.client.patch(self.url, {"first_name": self.first_name})
 
         self.assertEqual(response.status_code, 401)
@@ -90,7 +98,7 @@ class AccountIdViewTest(APITestCase):
             {"detail": "Authentication credentials were not provided."},
         )
 
-    def test_fail_patch_account_with_insufficient_credentials(self):
+    def test_fail_should_not_patch_account_when_has_insufficient_credentials(self):
         other_account = Account.objects.create_user(
             email="test2@mail.com",
             password="1234",
@@ -131,7 +139,7 @@ class AccountManagementView(APITestCase):
     def get_url(self, id):
         return f"/api/accounts/{id}/management/"
 
-    def test_should_change_is_active_attribute_when_is_super_user(self):
+    def test_success_should_change_is_active_attribute_when_is_super_user(self):
         url = self.get_url(id=self.normal_account.id)
         token = Token.objects.create(user=self.admin_account)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
@@ -141,7 +149,7 @@ class AccountManagementView(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["is_active"], False)
 
-    def test_should_fail_when_try_change_is_active_attribute_without_correct_credentials(
+    def test_fail_should_not_allow_when_try_change_is_active_attribute_without_correct_credentials(
         self,
     ):
         url = self.get_url(id=self.admin_account.id)
@@ -174,7 +182,7 @@ class LoginViewTest(APITestCase):
     def setUp(self) -> None:
         Account.objects.create_user(**self.account_data)
 
-    def test_login(self):
+    def test_success_should_login_when_the_request_is_correct(self):
         response = self.client.post(
             self.url,
             {
@@ -186,7 +194,7 @@ class LoginViewTest(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Token", response.json())
 
-    def test_fail_login_invalid_credentials(self):
+    def test_fail_should_not_allow_login_when_invalid_credentials(self):
         response = self.client.post(self.url, self.invalid_credentials)
 
         self.assertEqual(response.status_code, 401)
@@ -195,7 +203,7 @@ class LoginViewTest(APITestCase):
             {"detail": "invalid email or password"},
         )
 
-    def test_fail_login_invalid_body(self):
+    def test_fail_should_not_allow_login_when_invalid_body(self):
         response = self.client.post(self.url, {"": ""})
 
         self.assertEqual(response.status_code, 400)
