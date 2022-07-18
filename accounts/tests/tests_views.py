@@ -109,6 +109,54 @@ class AccountIdViewTest(APITestCase):
         )
 
 
+class AccountManagementView(APITestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.admin_account_data = {
+            "email": fake.email(),
+            "password": "1234",
+            "is_seller": fake.boolean(),
+            "is_superuser": True,
+        }
+        cls.normal_account_data = {
+            "email": fake.email(),
+            "password": "1234",
+            "is_seller": fake.boolean(),
+        }
+
+    def setUp(self) -> None:
+        self.admin_account = Account.objects.create_user(**self.admin_account_data)
+        self.normal_account = Account.objects.create_user(**self.normal_account_data)
+
+    def get_url(self, id):
+        return f"/api/accounts/{id}/management/"
+
+    def test_should_change_is_active_attribute_when_is_super_user(self):
+        url = self.get_url(id=self.normal_account.id)
+        token = Token.objects.create(user=self.admin_account)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        response = self.client.patch(url, {"is_active": False})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["is_active"], False)
+
+    def test_should_fail_when_try_change_is_active_attribute_without_correct_credentials(
+        self,
+    ):
+        url = self.get_url(id=self.admin_account.id)
+        token = Token.objects.create(user=self.normal_account)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        response = self.client.patch(url, {"is_active": False})
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json(),
+            {"detail": "You do not have permission to perform this action."},
+        )
+
+
 class LoginViewTest(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
@@ -118,10 +166,9 @@ class LoginViewTest(APITestCase):
             "password": "1234",
             "is_seller": fake.boolean(),
         }
-        cls.invalid_account = {
+        cls.invalid_credentials = {
             "email": fake.email(),
             "password": "1234",
-            "is_seller": fake.boolean(),
         }
 
     def setUp(self) -> None:
@@ -140,7 +187,7 @@ class LoginViewTest(APITestCase):
         self.assertIn("Token", response.json())
 
     def test_fail_login_invalid_credentials(self):
-        response = self.client.post(self.url, self.invalid_account)
+        response = self.client.post(self.url, self.invalid_credentials)
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(
