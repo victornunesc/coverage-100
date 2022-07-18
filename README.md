@@ -1,1 +1,1 @@
-# Komercio Generic Views
+![](coverage.png)
