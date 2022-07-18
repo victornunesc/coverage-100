@@ -1,6 +1,7 @@
 from urllib import response
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
+from django.contrib.auth.hashers import check_password
 from accounts.models import Account
 from faker import Faker
 
@@ -146,8 +147,22 @@ class AccountManagementView(APITestCase):
 
         response = self.client.patch(url, {"is_active": False})
 
+        get_account = Account.objects.get(id=self.normal_account.id)
+
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["is_active"], False)
+        self.assertEqual(get_account.is_active, False)
+
+    def test_success_should_hash_password_when_update_user(self):
+        url = self.get_url(id=self.normal_account.id)
+        token = Token.objects.create(user=self.admin_account)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        response = self.client.patch(url, {"password": "abc"})
+
+        get_account = Account.objects.get(id=self.normal_account.id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(check_password("abc", get_account.password))
 
     def test_fail_should_not_allow_when_try_change_is_active_attribute_without_correct_credentials(
         self,

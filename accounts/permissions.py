@@ -3,13 +3,10 @@ from rest_framework import permissions
 
 class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        if request.method == "PATCH":
-            if request.user.is_authenticated:
-                return request.user == obj
+        if request.user.is_authenticated:
+            return request.user == obj
 
-            return False
-
-        return True
+        return False
 
 
 class IsSuperAdmin(permissions.BasePermission):

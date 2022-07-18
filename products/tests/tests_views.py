@@ -1,5 +1,3 @@
-from this import s
-from urllib import response
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from faker import Faker
@@ -47,6 +45,22 @@ class ProductViewTest(APITestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertIn(self.seller_account.email, response.data["seller"]["email"])
+
+    def test_fail_should_throw_bad_request_status_when_invalid_body(self):
+        token = Token.objects.create(user=self.seller_account)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        response = self.client.post(self.url, {"test": 123})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {
+                "description": ["This field is required."],
+                "price": ["This field is required."],
+                "quantity": ["This field is required."],
+            },
+        )
 
     def test_fail_should_not_allow_create_product_when_is_buyer_account(self):
         token = Token.objects.create(user=self.buyer_account)

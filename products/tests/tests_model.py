@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.test import TestCase
 from faker import Faker
 
@@ -19,16 +20,17 @@ class ProductModelTest(TestCase):
             "is_seller": True,
         }
 
-        cls.account = Account.objects.create_user(**cls.seller_account_data)
+    def setUp(self) -> None:
+        self.account = Account.objects.create_user(**self.seller_account_data)
 
-        cls.product_data = {
+        self.product_data = {
             "description": "Text",
             "price": fake.random_int(1, 2000),
             "quantity": fake.random_int(1, 100),
-            "seller": cls.account,
+            "seller": self.account,
         }
 
-        cls.product = Product.objects.create(**cls.product_data)
+        self.product = Product.objects.create(**self.product_data)
 
     def test_all_account_fields(self):
         self.assertIsInstance(self.product.description, str)
@@ -42,3 +44,8 @@ class ProductModelTest(TestCase):
 
         self.assertIsInstance(self.product.seller, Account)
         self.assertEqual(self.product.seller, self.account)
+
+    def test_fail_should_throw_integrity_error_when_not_has_selle_attr(self):
+        self.assertRaises(
+            IntegrityError, Product.objects.create, seller=None, price=0, quantity=0
+        )
